@@ -1,5 +1,5 @@
 {
-  "name": "prisma-pagination",
+  "name": "graphql-cursor-pagination-tutorial",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
