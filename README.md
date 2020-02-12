@@ -2,13 +2,13 @@
 
 In this tutorial you will create a GraphQL API with Node.js and PostgreSQL that implements [Relay-style](https://relay.dev/docs/en/graphql-server-specification.html#schema) cursor pagination.
 
-* [ ] 0. [Introduction to pagination with GraphQL](#0.-introduction-to-pagination-with-graphql)
-* [ ] 1. [Set up your development environment](#1.-set-up-your-development-environment)
-* [ ] 2. [Create a PostgreSQL database](#2.-create-a-postgresql-database)
-* [ ] 3. [Create a GraphQL server in Node.js](#3.-create-a-graphql-serve-in-node.js)
-* [ ] 4. [Update the GraphQL schema and resolvers](#4.-update-the-graphql-schema-and-resolvers)
-* [ ] 5. [Return paginated results from PostgreSQL](#5.-return-paginated-results-from-postgresql)
-* [ ] 6. [Test GraphQL cursor pagination](#6.-test-graphql-cursor-pagination)
+* [ ] 0. [Introduction to pagination with GraphQL](#0-introduction-to-pagination-with-graphql)
+* [ ] 1. [Set up your development environment](#1-set-up-your-development-environment)
+* [ ] 2. [Create a PostgreSQL database](#2-create-a-postgresql-database)
+* [ ] 3. [Create a GraphQL server in Node.js](#3-create-a-graphql-serve-in-node.js)
+* [ ] 4. [Update the GraphQL schema and resolvers](#4-update-the-graphql-schema-and-resolvers)
+* [ ] 5. [Return paginated results from PostgreSQL](#5-return-paginated-results-from-postgresql)
+* [ ] 6. [Test GraphQL cursor pagination](#6-test-graphql-cursor-pagination)
 
 Alternatively, clone this repository and run `npm install` to install the required packages. Follow the steps in section #2 to set up a PostgreSQL database and update the following section in `index.js` with your PostgreSQL connection details:
 
