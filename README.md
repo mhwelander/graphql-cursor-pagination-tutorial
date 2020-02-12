@@ -375,7 +375,7 @@ Your GraphQL API now accepts queries and returns results in a format consisten w
 
 ## 5. Return paginated results from PostgreSQL
 
-This tutorial uses the [pg](https://www.npmjs.com/package/pg]) module to communicate with the PostgreSQL database. The [pg](https://www.npmjs.com/package/pg]) module is a driver rather than an ORM. Fewer abstractions makes it easier to control the PostgreSQL query.  In this section you will:
+This tutorial uses the [pg](https://www.npmjs.com/package/pg]) module to communicate with the PostgreSQL database. The [pg](https://www.npmjs.com/package/pg]) module is a driver rather than an ORM - fewer abstractions makes it easier to control the PostgreSQL query.  In this section you will:
 
 * Add a PostgreSQL pool and connect to the magic-cards database
 * Update the `paginatedCards` query resolver to get query the magic-cards database
