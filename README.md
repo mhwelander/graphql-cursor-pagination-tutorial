@@ -2,13 +2,13 @@
 
 In this tutorial you will create a GraphQL API with Node.js and PostgreSQL that implements [Relay-style](https://relay.dev/docs/en/graphql-server-specification.html#schema) cursor pagination.
 
-* [ ] 0. Introduction to pagination with GraphQL
-* [ ] 1. Set up your development environment
-* [ ] 2. Create a PostgreSQL database
-* [ ] 3. Create a GraphQL server in Node.js
-* [ ] 4. Update the GraphQL schema and resolvers
-* [ ] 5. Return paginated results from PostgreSQL
-* [ ] 6. Test GraphQL cursor pagination
+* [ ] 0. [Introduction to pagination with GraphQL](#0.-introduction-to-pagination-with-graphql)
+* [ ] 1. [Set up your development environment](#1.-set-up-your-development-environment)
+* [ ] 2. [Create a PostgreSQL database](#2.-create-a-postgresql-database)
+* [ ] 3. [Create a GraphQL server in Node.js](#3.-create-a-graphql-serve-in-node.js)
+* [ ] 4. [Update the GraphQL schema and resolvers](#4.-update-the-graphql-schema-and-resolvers)
+* [ ] 5. [Return paginated results from PostgreSQL](#5.-return-paginated-results-from-postgresql)
+* [ ] 6. [Test GraphQL cursor pagination](#6.-test-graphql-cursor-pagination)
 
 Alternatively, clone this repository and run `npm install` to install the required packages. Follow the steps in section #2 to set up a PostgreSQL database and update the following section in `index.js` with your PostgreSQL connection details:
 
@@ -22,6 +22,8 @@ const pool = new Pool({
 });
 ```
 
+Run `node index.js` to start the server.
+
 ## 0. Introduction to pagination with GraphQL
 
 There are two models for implementing pagination in a GraphQL API:
@@ -30,20 +32,20 @@ There are two models for implementing pagination in a GraphQL API:
 
     ![Limit/offset pagination](images/offset-limit-example.png)
 
-* **Cursor**: As you paginate through the data set, return a bookmark of your location (or 'cursor') that includes information about how to request the next and previous set of results. Cursors must be based on unique and sequential data, like an ID or a timestamp. For example, results 5 - 8 might have IDs 142, 150, 151, and 160, which means that results 9 - 12 must start with an ID greater than 160:
+* **Cursor**: As you paginate through the data set, return a bookmark (or 'cursor') that marks your location. The cursor includes information about how to request the next set of results. Cursors must be based on unique and sequential data, like an ID or a timestamp. For example, results 5 - 8 might have IDs 142, 150, 151, and 160, which means that results 9 - 12 must start with an ID greater than 160:
 
     ![Cursor pagination](images/cursor-example.png)
 
    You must paginate through the entire data set to reach page 5000 as there is no way to guess the first ID of the 5000th result set. Cursors are often returned to the client as an encoded value to indicate that the value cannot be guessed.
 
->Note: The pagination model you choose affects the backend implementation. Be aware that implementing cursor pagination in GraphQL does not mean that you have to use the underlying datastore's implementation of cursors. For example, this tutorial does not use PostgreSQL cursors.
+> **NOTE**: The pagination model you choose affects the backend implementation. Be aware that implementing cursor pagination in GraphQL does not mean that you have to use the underlying datastore's implementation of cursors. For example, this tutorial does not use PostgreSQL cursors.
 
 Your choice of pagination model depends on your particular use case:
 
 | **Pagination model**  	| **Pros**                                                                                                                                                                                                                                                                     	| **Cons**                                                                                                                                                                                                                                                                                                                                                                                	| **Use case**                                                                    	|
 |-----------------------	|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|---------------------------------------------------------------------------------	|
 | Limit/offset          	| <ul> <li>Transparent and simple to implement</li> <li>Supports ordering results by any property - for example, total purchase cost.</li> </ul>                                                                                                                               	|  <ul> <li>Does not scale well for large data sets. Skipping 100,000 results to get 100,000 - 100,010 still requires you to traverse the first 100,000 records.</li> <li>Possible duplication if data is added while you are paginating - for example, a query that returns purchases ordered by total cost may return the same record multiple times as purchases are added.</li> </ul> 	| Shallow pagination through search results ordered by relevance.                 	|
-| Cursor                	| <ul> <li>Scales for large data sets. When you use a bookmark to results 100,000 to 100,010, you do not need to traverse the first 100,000 results.</li> <li>Duplication is unlikely as results are ordered by a sequential property such as an ID or a timestamp.</li> </ul> 	| <ul>  <li>Only supports jumping to the next or previous page - you cannot jump to page 10,000.</li>  <li>Results must be ordered by a unique and sequential property - like ID. You cannot order by total purchase cost.  </ul>                                                                                                                                                         	| Infinite scroll through a large and dynamic data set, such as a comments feed. 	|
+| Cursor                	| <ul> <li>Scales for large data sets. When you use a bookmark to get results 100,000 to 100,010, you do not need to traverse the first 100,000 results.</li> <li>Duplication is unlikely as results are ordered by a sequential property such as an ID or a timestamp.</li> </ul> 	| <ul>  <li>Only supports jumping to the next page - you cannot jump to page 10,000.</li>  <li>Results must be ordered by a unique and sequential property - like ID. You cannot order by total purchase cost.  </ul>                                                                                                                                                         	        | Infinite scroll through a large and dynamic data set, such as a comments feed. 	|
 
 ## 1. Set up your development environment
 
@@ -66,7 +68,7 @@ To create and popoulate a PostgreSQL database:
 2. Right-click on the **Servers** > **PostgreSQL** > **Databases** node and click **Create** > **Database**...
 3. Name your database *magic-cards* and click **Save**.
 4. Right-click on the **magic-cards** database node and click **Query Tool...** .
-5. To create the Card table, paste the following SQL script into the Query Editor and press F5 to run the script:
+5. To create the empty Card table, paste the following SQL script into the Query Editor and press F5 to run the script:
 
     ```sql
     SET statement_timeout = 0;
@@ -125,11 +127,13 @@ To create and popoulate a PostgreSQL database:
     INSERT INTO public."Card" ("CardName", "CardOracleText", "CardFlavourText", "CardManaCost", "SetID") OVERRIDING SYSTEM VALUE VALUES ('Sandsteppe Mastodon', 'When Sandsteppe Mastodon enters the battlefield, bolster 5. (Choose a creature with the least toughness among creatures you control and put five +1/+1 counters on it.)', '', '7', 2);
     ```
 
-7. To see all cards, run the following SQL script:
+7. To see all cards, use the Query Editor to run the following SQL script:
 
     ```sql
     SELECT * FROM public."Card"
     ```
+
+    You should see the list of cards you inserted in the previous step.
 
 ## 3. Create a GraphQL server in Node.js
 
@@ -141,7 +145,7 @@ This tutorial uses Node.js to run a GraphQL server using [express](https://www.n
 
 To create and run a simple GraphQL server in Node.js:
 
-1. Create a folder named *magic-cards* - for example, under \projects\magic-cards.
+1. Create a folder named *magic-cards* - for example, under `<root>\projects\magic-cards`.
 2. Open your terminal and run the following command in the **magic-cards** folder:
 
     `npm init`
@@ -195,7 +199,7 @@ To create and run a simple GraphQL server in Node.js:
 
 8. Run the following query in the GraphiQL tool:
 
-    ```json
+    ```
     {
         cards
     }
@@ -210,6 +214,8 @@ To create and run a simple GraphQL server in Node.js:
         }
     }    
     ```
+
+You now have a GraphQL server that returns some data.
 
 ## 4. Update the GraphQL schema and resolvers
 
@@ -264,6 +270,8 @@ To update the GraphQL schema and query resolver in `index.js`:
     }
     `);
     ```
+    
+    This schema follows the Relay specification and includes the following types:
 
     * The `CardConnection` wraps the result of a query and includes a list of results and information about the current result set (or 'page').
     * The `PageInfo` type includes the last available cursor and whether or not more data is available.
@@ -317,7 +325,7 @@ To update the GraphQL schema and query resolver in `index.js`:
 
 5. Restart your GraphQL server and run the following query in the GraphiQL tool:
 
-    ```json
+    ```
     {
         paginatedCards {
             totalCount
@@ -367,11 +375,11 @@ Your GraphQL API now accepts queries and returns results in a format consisten w
 
 ## 5. Return paginated results from PostgreSQL
 
-This tutorial uses the [pg](https://www.npmjs.com/package/pg]) module to communicate with the PostgreSQL database. The [pg](https://www.npmjs.com/package/pg]) module is a driver rather than an ORM, which means there is very little abstraction and makes it easier to see what the PostgreSQL query is doing.  In this section you will:
+This tutorial uses the [pg](https://www.npmjs.com/package/pg]) module to communicate with the PostgreSQL database. The [pg](https://www.npmjs.com/package/pg]) module is a driver rather than an ORM. Fewer abstractions makes it easier to control the PostgreSQL query.  In this section you will:
 
-* Add a PostgreSQL pool
+* Add a PostgreSQL pool and connect to the magic-cards database
 * Update the `paginatedCards` query resolver to get query the magic-cards database
-* Add helper functions to decode/encode cursor
+* Add helper functions to decode/encode the cursors
 
 To return paginated results from PostgreSQL:
 
@@ -561,10 +569,10 @@ To return paginated results from PostgreSQL:
 
 ## 6. Test GraphQL cursor pagination
 
-In this section you will:
+Let's test the pagination feature. In this section you will:
 
 * Use the `lastCursor` returned with each result set to get the next page
-* Paginate a query that includes a card `name`
+* Paginate a query that includes a card `name` in addition to a cursor
 
 > **TIP**: You can technically use any card edge `cursor` as your starting point for the next page, although it makes most sense to use the `lastCursor`. 
 
@@ -643,7 +651,7 @@ In this section you will:
     }
     ```
 
-    You have successfully used a cursor to paginate a set of results.
+    You have successfully used a cursor to paginate the entire result set.
 
 3. Issue the following query, which includes the name of a specific card:
 
