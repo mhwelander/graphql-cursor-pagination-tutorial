@@ -50,8 +50,6 @@ var root = {
         try {
             var decodedAfter = (after != null) ? decode(after) : 0;
 
-            console.log(name);
-
             // Request a client from the pool
             const client = await pool.connect();
             const values = [decodedAfter, first, name]
@@ -88,7 +86,7 @@ var root = {
         } catch (error) {
             console.log(error);
         }
-    },
+    }
 };
 
 var app = express();
